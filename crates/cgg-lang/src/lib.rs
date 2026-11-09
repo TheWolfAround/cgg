@@ -57,6 +57,15 @@ pub struct ExtractCtx<'a> {
     /// noise and extraction time.
     pub reference_sites: bool,
 
+    /// Record attribute reads that could run a property getter
+    /// (Python `grid_sample_3d(pbr_voxel.feats, device=pipeline.device)`)
+    /// plus the declarative type tables the property-edge pass reads:
+    /// typed parameters and declared return types. The only consumer is
+    /// `--property-edges`; an ordinary run neither captures these reads
+    /// nor fills the tables, so its facts — and its graph — are
+    /// untouched. Python only today.
+    pub property_sites: bool,
+
     /// Registrar verbs contributed by user-authored framework rules,
     /// pre-lowercased.
     ///
@@ -236,6 +245,7 @@ impl<'a> ExtractCtx<'a> {
         Self {
             deadcode_signals,
             reference_sites: false,
+            property_sites: false,
             extra_verbs,
             language: "",
             test_file: false,
@@ -248,6 +258,17 @@ impl<'a> ExtractCtx<'a> {
     pub fn with_reference_sites(self, on: bool) -> Self {
         Self {
             reference_sites: on,
+            ..self
+        }
+    }
+
+    /// The same context, recording property-read candidates and the
+    /// declarative type tables they resolve through (see
+    /// [`ExtractCtx::property_sites`]).
+    #[must_use]
+    pub fn with_property_sites(self, on: bool) -> Self {
+        Self {
+            property_sites: on,
             ..self
         }
     }
@@ -314,6 +335,7 @@ impl<'a> ExtractCtx<'a> {
         ExtractCtx {
             deadcode_signals: false,
             reference_sites: false,
+            property_sites: false,
             extra_verbs: no_extra_verbs(),
             language: "",
             test_file: false,
